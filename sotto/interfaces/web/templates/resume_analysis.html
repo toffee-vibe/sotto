@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% block title %}Анализ резюме — Sotto{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div class="titles">
+    <h1>Анализ резюме</h1>
+    <p class="lead">Резюме глазами рекрутера-техлида: вердикт, красные флаги с цитатами, чего не хватает
+      под роль и как переписать слабые пункты. Разбор делает твой CLI-агент — ключ API не тратится,
+      но подожди полминуты-минуту.</p>
+  </div>
+</div>
+
+<div class="grid-side">
+  <div class="card">
+    <form method="post" action="/resume/analysis">
+      <div class="field"><label>Резюме</label>
+        <textarea name="resume" class="code" style="min-height:340px">{{ resume }}</textarea>
+        <div class="help">Подставлен профиль с сайта; можно вставить любой текст (TXT, MD, PDF сначала сохрани как текст).</div></div>
+      <div class="field"><label>Специализация</label>
+        <input type="text" name="specialization" value="{{ specialization }}" list="spec-list"
+               placeholder="Python backend developer">
+        <datalist id="spec-list">
+          <option value="Python backend developer">
+          <option value="Backend engineer (Python, highload)">
+          <option value="Frontend developer (React)">
+          <option value="Fullstack developer">
+          <option value="DevOps / SRE">
+          <option value="Data engineer">
+          <option value="QA Automation">
+        </datalist></div>
+      <div class="form-actions"><button>Анализировать</button>
+        {% if error %}<span class="badge bad">{{ error }}</span>{% endif %}</div>
+    </form>
+  </div>
+  {% if result %}
+  <div class="card">
+    <div class="card-head"><h3>Разбор</h3></div>
+    <div class="prose">{{ result|md|safe }}</div>
+  </div>
+  {% else %}
+  <div class="card subtle">
+    <div class="card-head"><h3>Что получишь</h3></div>
+    <div class="prose muted small">
+      <p>— вердикт «позвал бы на звонок или нет» с оценкой;</p>
+      <p>— красные флаги с цитатами из текста;</p>
+      <p>— чего не хватает под конкретную роль;</p>
+      <p>— слабые пункты в сильной формулировке (было → стало);</p>
+      <p>— ключевые слова для ATS.</p>
+    </div>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

@@ -282,6 +282,24 @@ def build_app(s: Sotto) -> FastAPI:
     async def prompts_page(request: Request):
         return page(request, "prompts.html", groups=s.prompts.catalog(), prompts_dir=str(paths.PROMPTS_DIR))
 
+    # ---------------- анализ резюме ----------------
+
+    @app.get("/resume/analysis", response_class=HTMLResponse)
+    async def resume_analysis_page(request: Request):
+        return page(request, "resume_analysis.html", resume=s.prompts.profile(), specialization="", result="", error="")
+
+    @app.post("/resume/analysis", response_class=HTMLResponse)
+    async def resume_analysis_run(request: Request, resume: str = Form(...), specialization: str = Form(...)):
+        prompt = s.prompts.load("resume_analysis").format(resume=resume.strip()[:12000],
+                                                          specialization=specialization.strip() or "разработчик")
+        result, error = "", ""
+        try:
+            result, _ = await s.agents.run(prompt, task="анализ резюме")
+        except AgentError as e:
+            error = str(e)[:300]
+        return page(request, "resume_analysis.html", resume=resume, specialization=specialization,
+                    result=result.strip(), error=error)
+
     @app.post("/prompts/{kind}")
     async def prompt_save(request: Request, kind: str, text: str = Form(...)):
         if kind in CATALOG:

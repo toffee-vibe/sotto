@@ -101,7 +101,7 @@ Ctrl+C в терминале останавливает всё. Дальше в�
 `SetWindowDisplayAffinity` (окна нет ни в демонстрации экрана, ни в скриншотах).
 
 ```powershell
-git clone https://github.com/toffee-vibe/sotto.git
+git clone https://github.com/toffee-vibe/sotto.git   # или скачай ZIP с GitHub и распакуй
 cd sotto
 powershell -ExecutionPolicy Bypass -File .\install.ps1   # .venv, зависимости, проверка ffmpeg
 sotto.cmd setup     # ключ OpenRouter, локальные модели, профиль
@@ -110,6 +110,10 @@ sotto.cmd autostart on   # опционально: запуск при вход�
 ```
 
 Или вручную: `pip install .[windows]` (Python 3.12+) плюс **ffmpeg** (`winget install --id Gyan.FFmpeg -e`).
+
+**Если у тебя VPN/прокси** (v2ray и т.п.): ничего настраивать не надо — localhost Sotto всегда ходит
+напрямую, а OpenRouter/DeepSeek — через твой прокси. Если пишешь «Sotto уже запущен», а панель не
+открывается — обновись: эта ошибка была в старых версиях.
 
 Особенности Windows-версии:
 

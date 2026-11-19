@@ -225,10 +225,12 @@ def run(with_overlay: bool = True, with_desktop: bool = True, voice: bool = True
 
 
 def _already_running(url: str) -> bool:
+    """Демон уже запущен? Проверяем, что отвечает именно Sotto: системный прокси (VPN) отвечает
+    на любой localhost-запрос, и по одному факту ответа мы бы ложно решили, что демон жив."""
     import httpx
 
     try:
-        httpx.get(f"{url}/api/status", timeout=2)
-        return True
-    except httpx.HTTPError:
+        resp = httpx.get(f"{url}/api/status", timeout=2, trust_env=False)
+        return resp.status_code == 200 and "voice" in resp.json()
+    except (httpx.HTTPError, ValueError):
         return False

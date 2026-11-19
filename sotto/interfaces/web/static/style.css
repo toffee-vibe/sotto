@@ -1,72 +1,53 @@
-/* Sotto — спокойный интерфейс: одна приглушённая акцентная краска, никаких ярких плашек и прыжков вёрстки. */
+/* Sotto — тёмный, тихий интерфейс: почти чёрный фон, тонкие рамки, белая главная кнопка,
+   приглушённые статусные краски (никакой кислоты). Ориентир по аккуратности — shadcn-тёмная. */
 
 :root {
-  --bg: #f6f6f3;
-  --surface: #ffffff;
-  --surface-2: #f1f0ec;
-  --surface-3: #e9e8e3;
-  --text: #1b1b19;
-  --muted: #6b6a64;
-  --faint: #9a9992;
-  --line: #e4e3dd;
-  --line-strong: #d3d2cb;
-  --accent: #34507e;
-  --accent-hover: #2a426a;
-  --accent-soft: #e9eef6;
-  --accent-text: #2c4570;
-  --on-accent: #ffffff;
-  --ok: #2d6e4a;
-  --ok-soft: #e7f1ea;
-  --bad: #a8413c;
-  --bad-soft: #f7eae9;
-  --warn: #8a6216;
-  --warn-soft: #f5eedd;
-  --legend: #77508f;
-  --legend-soft: #f1ebf6;
-  --shadow: 0 1px 2px rgba(20, 20, 15, .04), 0 1px 1px rgba(20, 20, 15, .03);
+  --bg: #0a0a0b;
+  --surface: #101012;
+  --surface-2: #17171a;
+  --surface-3: #1f1f24;
+  --text: #f4f4f5;
+  --muted: #a1a1aa;
+  --faint: #6b6b76;
+  --line: #222226;
+  --line-strong: #32323a;
+  --primary: #f4f4f5;            /* главная кнопка — белая */
+  --primary-hover: #dddde1;
+  --on-primary: #0a0a0b;
+  --accent: #c4d0da;             /* ссылки, фокус, активный пункт меню */
+  --accent-hover: #d9e3eb;
+  --accent-soft: #1a2129;
+  --accent-text: #c4d0da;
+  --on-accent: #0a0a0b;
+  --ok: #86c9a5;
+  --ok-soft: #13201a;
+  --bad: #e08a84;
+  --bad-soft: #271716;
+  --warn: #d8b26a;
+  --warn-soft: #241d10;
+  --legend: #c3a2db;
+  --legend-soft: #211a29;
+  --shadow: 0 1px 2px rgba(0, 0, 0, .35);
   --radius: 12px;
   --radius-sm: 8px;
   --sidebar: 236px;
   --mono: ui-monospace, "JetBrains Mono", "Cascadia Code", Menlo, monospace;
-  color-scheme: light;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --bg: #111110;
-    --surface: #1a1a18;
-    --surface-2: #212120;
-    --surface-3: #2a2a28;
-    --text: #e8e7e2;
-    --muted: #a3a29b;
-    --faint: #75746e;
-    --line: #2c2c29;
-    --line-strong: #3a3a36;
-    --accent: #8ea8d6;
-    --accent-hover: #a6bce2;
-    --accent-soft: #1f2838;
-    --accent-text: #a9bfe6;
-    --on-accent: #10141c;
-    --ok: #7cc39a;
-    --ok-soft: #18271f;
-    --bad: #e08a84;
-    --bad-soft: #2c1b1a;
-    --warn: #d8b26a;
-    --warn-soft: #2a2416;
-    --legend: #c3a2db;
-    --legend-soft: #261f2d;
-    --shadow: none;
-    color-scheme: dark;
-  }
+  color-scheme: dark;
 }
 
 * { box-sizing: border-box; }
 html { -webkit-text-size-adjust: 100%; }
 body {
   margin: 0; background: var(--bg); color: var(--text);
-  font: 14.5px/1.55 system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans", sans-serif;
+  font: 14.5px/1.55 "Inter", system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans", sans-serif;
   -webkit-font-smoothing: antialiased;
+  font-feature-settings: "cv11", "ss01";
 }
+::selection { background: #2c3644; color: var(--text); }
+* { scrollbar-width: thin; scrollbar-color: var(--surface-3) transparent; }
+*::-webkit-scrollbar { width: 10px; height: 10px; }
+*::-webkit-scrollbar-thumb { background: var(--surface-3); border-radius: 8px; border: 2px solid var(--bg); }
+*::-webkit-scrollbar-track { background: transparent; }
 a { color: var(--accent-text); text-decoration: none; }
 a:hover { text-decoration: underline; text-underline-offset: 2px; }
 code, pre, kbd { font-family: var(--mono); font-size: 12.5px; }
@@ -94,7 +75,7 @@ h3 { font-size: 14.5px; font-weight: 600; margin: 0 0 8px; }
 .brand { display: flex; align-items: center; gap: 10px; padding: 0 8px 18px; color: var(--text); font-weight: 650; font-size: 16px; }
 .brand:hover { text-decoration: none; }
 .brand-mark {
-  width: 26px; height: 26px; border-radius: 8px; background: var(--accent); color: var(--on-accent);
+  width: 26px; height: 26px; border-radius: 8px; background: var(--primary); color: var(--on-primary);
   display: grid; place-items: center; font-size: 14px; font-weight: 700;
 }
 .nav { display: flex; flex-direction: column; gap: 2px; }
@@ -102,10 +83,10 @@ h3 { font-size: 14.5px; font-weight: 600; margin: 0 0 8px; }
   padding: 14px 10px 6px; }
 .nav a {
   display: flex; align-items: center; gap: 10px; padding: 7px 10px; border-radius: var(--radius-sm);
-  color: var(--muted); font-size: 14px;
+  color: var(--muted); font-size: 14px; transition: background .12s, color .12s;
 }
 .nav a:hover { background: var(--surface-2); color: var(--text); text-decoration: none; }
-.nav a.active { background: var(--accent-soft); color: var(--accent-text); font-weight: 550; }
+.nav a.active { background: var(--surface-3); color: var(--text); font-weight: 550; }
 .nav svg { width: 17px; height: 17px; flex: 0 0 17px; stroke: currentColor; fill: none; stroke-width: 1.7;
   stroke-linecap: round; stroke-linejoin: round; opacity: .9; }
 
@@ -205,16 +186,16 @@ h3 { font-size: 14.5px; font-weight: 600; margin: 0 0 8px; }
 
 button, .btn {
   display: inline-flex; align-items: center; gap: 6px; padding: 8px 14px; border-radius: var(--radius-sm);
-  border: 1px solid var(--accent); background: var(--accent); color: var(--on-accent);
+  border: 1px solid transparent; background: var(--primary); color: var(--on-primary);
   font: inherit; font-size: 14px; font-weight: 550; line-height: 1.2; cursor: pointer; white-space: nowrap;
-  text-decoration: none !important; transition: background .12s, border-color .12s;
+  text-decoration: none !important; transition: background .12s, border-color .12s, color .12s;
 }
-button:hover, .btn:hover { background: var(--accent-hover); border-color: var(--accent-hover); }
+button:hover, .btn:hover { background: var(--primary-hover); }
 button:focus-visible, .btn:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible, a:focus-visible {
   outline: 2px solid var(--accent); outline-offset: 2px;
 }
-.btn-secondary { background: var(--surface); color: var(--text); border-color: var(--line-strong); }
-.btn-secondary:hover { background: var(--surface-2); border-color: var(--line-strong); }
+.btn-secondary { background: transparent; color: var(--text); border-color: var(--line-strong); }
+.btn-secondary:hover { background: var(--surface-2); }
 .btn-ghost { background: transparent; color: var(--accent-text); border-color: transparent; padding-left: 8px; padding-right: 8px; }
 .btn-ghost:hover { background: var(--accent-soft); border-color: transparent; }
 .btn-danger { background: transparent; color: var(--bad); border-color: transparent; }
@@ -275,8 +256,10 @@ label { display: block; font-size: 13px; font-weight: 500; color: var(--muted); 
 input[type=text], input[type=password], input[type=number], input[type=search], input[type=datetime-local],
 input[type=email], input[type=url], textarea, select {
   width: 100%; padding: 8px 11px; border: 1px solid var(--line-strong); border-radius: var(--radius-sm);
-  background: var(--surface); color: var(--text); font: inherit; font-size: 14px; min-width: 0;
+  background: transparent; color: var(--text); font: inherit; font-size: 14px; min-width: 0;
+  transition: border-color .12s;
 }
+input:hover, textarea:hover, select:hover { border-color: var(--faint); }
 input::placeholder, textarea::placeholder { color: var(--faint); }
 textarea { min-height: 110px; resize: vertical; line-height: 1.5; }
 textarea.code { font-family: var(--mono); font-size: 12.5px; }

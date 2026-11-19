@@ -104,6 +104,11 @@ def main(argv: list[str] | None = None) -> int:
     j = sub.add_parser("jobs", help="вакансии")
     j.add_argument("action", choices=["fetch", "cluster", "login-telegram", "login-linkedin"])
     sub.add_parser("status", help="состояние демона")
+    sh = sub.add_parser("shot", help="снимок экрана или выделенной области (вызывает демон отдельным процессом)")
+    sh.add_argument("out", nargs="?", default="")
+    sh.add_argument("--region", action="store_true")
+    au = sub.add_parser("autostart", help="запуск при входе в систему (Windows)")
+    au.add_argument("state", choices=["on", "off"])
     tr = sub.add_parser("translate", help="ЭКСПЕРИМЕНТ: голосовой переводчик звонка")
     tr.add_argument("action", choices=["run", "enroll", "say"])
     tr.add_argument("text", nargs="?", default="")
@@ -129,6 +134,17 @@ def main(argv: list[str] | None = None) -> int:
         return cmd_stage(args)
     if args.cmd == "status":
         return cmd_status(args)
+    if args.cmd == "shot":
+        from .shot import main as shot_main
+        return shot_main(args.out, args.region)
+    if args.cmd == "autostart":
+        if sys.platform != "win32":
+            print("На Linux автозапуск — через home-manager (services.sotto.enable) или systemd; см. README.")
+            return 1
+        from ...infrastructure.platform.windows import winsys
+        winsys.set_autostart(args.state == "on")
+        print(f"Автозапуск: {'включён' if args.state == 'on' else 'выключен'}")
+        return 0
     if args.cmd == "setup":
         from .setup import run_setup
         return asyncio.run(run_setup())

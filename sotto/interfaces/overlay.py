@@ -392,6 +392,13 @@ def main() -> None:
     base = f"http://{cfg.web.host}:{cfg.web.port}"
     threading.Thread(target=listen, args=(base, events), daemon=True).start()
     overlay.show()
+    if sys.platform == "win32":
+        # Пометить своё окно: демон найдёт его (даже через процесс-посредник venv-питона)
+        # и исключит из демонстрации экрана.
+        from ..infrastructure.platform.windows import winsys
+        winsys.set_dpi_awareness()
+        winsys.set_app_user_model_id()
+        winsys.mark_overlay(int(overlay.winId()))
     sys.exit(app.exec())
 
 

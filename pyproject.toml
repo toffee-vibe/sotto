@@ -15,6 +15,10 @@ dependencies = [
   "PySide6", "telethon", "playwright", "markdown", "weasyprint",
 ]
 
+[project.optional-dependencies]
+# Windows 11: захват звука WASAPI (soundcard), скриншоты (mss + pillow). FFmpeg — отдельно, не из pip.
+windows = ["soundcard", "mss", "pillow"]
+
 [project.scripts]
 sotto = "sotto.cli:main"
 

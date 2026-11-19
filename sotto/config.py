@@ -7,6 +7,7 @@
 from __future__ import annotations
 
 import os
+import sys
 import tomllib
 from dataclasses import asdict, dataclass, field, fields, is_dataclass
 from pathlib import Path
@@ -104,14 +105,19 @@ class Calls:
 
 @dataclass
 class Hotkeys:
-    """Хоткеи регистрируются в Hyprland на лету при запуске демона. Пусто — не назначен
-    (действие остаётся в панели и в `sotto ctl`)."""
-    ask: str = "SUPER + A"                    # ответить сейчас, не дожидаясь паузы
-    screen: str = "SUPER + X"                 # подсказка по скриншоту экрана
-    screen_region: str = "SUPER + SHIFT + X"  # … по выделенной области
-    questions: str = "SUPER + SHIFT + A"      # какие вопросы задать собеседнику
-    toggle_overlay: str = "SUPER + H"         # спрятать/показать оверлей
-    overlay_edit: str = "SUPER + SHIFT + O"   # передвинуть/растянуть оверлей (иначе он прозрачен для мыши)
+    """Хоткеи регистрируются при запуске демона: в Hyprland — на лету (hyprctl), в Windows —
+    глобальные (RegisterHotKey). Пусто — не назначен (действие остаётся в панели и в `sotto ctl`).
+
+    В Windows по умолчанию Ctrl+Alt: SUPER+A, SUPER+X и SUPER+H заняты самой Windows 11
+    (панель быстрых настроек, меню Win+X, голосовой ввод) — RegisterHotKey их не отдаёт."""
+    ask: str = "CTRL + ALT + A" if sys.platform == "win32" else "SUPER + A"  # ответить сейчас
+    screen: str = "CTRL + ALT + X" if sys.platform == "win32" else "SUPER + X"  # по скриншоту экрана
+    screen_region: str = ("CTRL + ALT + SHIFT + X" if sys.platform == "win32"
+                          else "SUPER + SHIFT + X")  # … по выделенной области
+    questions: str = "CTRL + ALT + Q" if sys.platform == "win32" else "SUPER + SHIFT + A"
+    toggle_overlay: str = "CTRL + ALT + H" if sys.platform == "win32" else "SUPER + H"
+    overlay_edit: str = ("CTRL + ALT + O" if sys.platform == "win32"
+                         else "SUPER + SHIFT + O")  # передвинуть/растянуть оверлей (иначе он прозрачен для мыши)
     toggle_mode: str = ""
     toggle_call: str = ""
     scroll_up: str = ""

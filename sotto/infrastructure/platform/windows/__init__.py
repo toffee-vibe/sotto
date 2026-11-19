@@ -1,22 +1,14 @@
-"""Windows: заготовка платформы (порт Platform — application/ports.py).
+"""Windows 11: WASAPI (звук), Win32 (окна, хоткеи), ffmpeg+ddagrab (экран), mss (скриншоты),
+ConsentStore (кто держит микрофон), PowerShell balloon (уведомления).
 
-Работает сейчас: сайт, текстовый режим, собеседования, легенда, поиск — и невидимый оверлей
-(SetWindowDisplayAffinity вырезает окно из демонстрации экрана и скриншотов, Windows 10 2004+).
-Звука, записи экрана, хоткеев и «сцены» пока нет: заглушки унаследованы от null-платформы,
-у каждой ниже — чем её реализовать. Карта замен Linux → Windows:
+Невидимость оверлея — SetWindowDisplayAffinity(WDA_EXCLUDEFROMCAPTURE): окна нет ни в демонстрации
+экрана (Zoom, Meet, Teams, Telegram, браузер), ни в скриншотах. Windows 10 2004+ / 11.
 
-  звук (PipeWire)      — WASAPI loopback: пакет soundcard (get_microphone(..., include_loopback=True))
-                         или pyaudiowpatch; отдавать те же куски float32 16 кГц, что ждёт listener
-  кто держит микрофон  — сессии Core Audio: pycaw (AudioUtilities.GetAllSessions, session.Process.name())
-  скриншот             — mss (экран, монитор, регион) или QScreen.grabWindow
-  запись экрана        — ffmpeg -f ddagrab -framerate FPS (-c:v h264_nvenc / hevc_amf / libx265)
-  хоткеи               — RegisterHotKey + цикл GetMessageW в своём потоке (заготовка в WindowsWM.bind_hotkeys)
-  уведомления          — win10toast или winrt (Windows.UI.Notifications)
-  «сцена»              — виртуального монитора из коробки нет (нужен IddCx-драйвер); проще: показывать
-                         в звонке окно, а не экран — оверлей и так вырезан из захвата
+Чего нет (и не планируется без драйверов): «сцена» (виртуальный монитор — нужен IddCx) и
+переводчик (виртуальные устройства PipeWire). В звонке показывай окно, а не экран.
 
-Модуль импортируется только на Windows (platform.detect), поэтому ctypes.windll трогаем только внутри
-функций: так файл можно читать и импортировать на любой ОС.
+Модули winsys/audio — только для Windows, поэтому импортируются лениво внутри методов:
+сам этот файл читается на любой ОС (тесты, подсветка кода).
 """
 
 from __future__ import annotations
@@ -24,91 +16,120 @@ from __future__ import annotations
 import ctypes
 import ctypes.wintypes as wt
 import logging
+import shlex
+import subprocess
+from pathlib import Path
 from typing import Any
 
+import numpy as np
+
+from ... import process as proc
 from ..null import NullPlatform, NullWM
 
 log = logging.getLogger(__name__)
 
-_WDA_EXCLUDEFROMCAPTURE = 0x00000011   # Windows 10 2004+: окна нет ни в демонстрации, ни в скриншотах
-_OVERLAY_TITLE = "Sotto"               # заголовок окна оверлея (interfaces/overlay.py)
-
-
-def _user32() -> Any:
-    return ctypes.windll.user32
-
-
-def _find_window(title: str) -> int | None:
-    """Первый видимый hwnd с точным заголовком."""
-    user32 = _user32()
-    found: list[int] = []
-
-    @ctypes.WINFUNCTYPE(wt.BOOL, wt.HWND, wt.LPARAM)
-    def each(hwnd: int, _: int) -> bool:
-        if user32.IsWindowVisible(hwnd) and user32.GetWindowTextLengthW(hwnd):
-            buf = ctypes.create_unicode_buffer(user32.GetWindowTextLengthW(hwnd) + 1)
-            user32.GetWindowTextW(hwnd, buf, len(buf))
-            if buf.value == title:
-                found.append(hwnd)
-        return True
-
-    user32.EnumWindows(each, 0)
-    return found[0] if found else None
+_OVERLAY_TITLE = "Sotto"   # заголовок окна оверлея (interfaces/overlay.py)
 
 
 class WindowsWM(NullWM):
-    """Окна: невидимость оверлея и его геометрия — настоящие; хоткеи и «сцена» — TODO."""
+    """Окна: невидимость оверлея, его геометрия, глобальные хоткеи. «Сцены» на Windows нет."""
+
+    def __init__(self) -> None:
+        self._ws_mod: Any = None
+        self._hotkeys: Any = None
+
+    @property
+    def _ws(self) -> Any:
+        """winsys — только Windows; импортируем при первом обращении, а не при создании объекта."""
+        if self._ws_mod is None:
+            from . import winsys
+            self._ws_mod = winsys
+        return self._ws_mod
 
     def available(self) -> bool:
-        return True  # скрыть оверлей из демонстрации умеем — показывать его можно
+        ok = self._ws.supports_capture_exclusion()
+        if not ok:
+            log.error("Windows старше 10 2004 не умеет исключать окно из захвата — оверлей показывать нельзя")
+        return ok
+
+    def _overlay_hwnd(self) -> int | None:
+        marked = self._ws.windows_marked_as_overlay()
+        if marked:
+            return marked[0]
+        # Fallback: окно ещё не пометило себя (старый оверлей) — ищем по заголовку.
+        found: list[int] = []
+        user32 = self._ws.user32
+
+        @ctypes.WINFUNCTYPE(wt.BOOL, wt.HWND, wt.LPARAM)
+        def each(hwnd: int, _: int) -> bool:
+            if user32.IsWindowVisible(hwnd) and user32.GetWindowTextLengthW(hwnd):
+                buf = ctypes.create_unicode_buffer(user32.GetWindowTextLengthW(hwnd) + 1)
+                user32.GetWindowTextW(hwnd, buf, len(buf))
+                if buf.value == _OVERLAY_TITLE:
+                    found.append(hwnd)
+            return True
+
+        user32.EnumWindows(each, 0)
+        return found[0] if found else None
 
     def overlay_window(self) -> str | None:
-        hwnd = _find_window(_OVERLAY_TITLE)
+        hwnd = self._overlay_hwnd()
         return str(hwnd) if hwnd else None
 
     def protect(self, window: str) -> None:
-        if not _user32().SetWindowDisplayAffinity(int(window), _WDA_EXCLUDEFROMCAPTURE):
-            log.warning("SetWindowDisplayAffinity не сработал (нужна Windows 10 2004+)")
+        hwnd = int(window)
+        self._ws.make_no_activate(hwnd)
+        self._ws.hide_overlay(hwnd)
 
     def is_protected(self, window: str) -> bool:
-        value = wt.DWORD(0)
-        user32 = _user32()
-        return bool(user32.GetWindowDisplayAffinity(int(window), ctypes.byref(value))) \
-            and value.value == _WDA_EXCLUDEFROMCAPTURE
+        return self._ws.overlay_hidden(int(window))
 
     def protect_overlay(self, x: int, y: int, w: int, h: int) -> bool:
-        hwnd = _find_window(_OVERLAY_TITLE)
+        hwnd = self._overlay_hwnd()
         if not hwnd:
             return False
         self.protect(str(hwnd))
         return self.is_protected(str(hwnd))
 
     def overlay_geometry(self) -> tuple[int, int, int, int] | None:
-        hwnd = _find_window(_OVERLAY_TITLE)
-        if not hwnd:
-            return None
-        rect = wt.RECT()
-        if not _user32().GetWindowRect(hwnd, ctypes.byref(rect)):
-            return None
-        return rect.left, rect.top, rect.right - rect.left, rect.bottom - rect.top
+        hwnd = self._overlay_hwnd()
+        return self._ws.overlay_geometry(hwnd) if hwnd else None
 
     def default_overlay_position(self, width: int) -> tuple[int, int]:
-        screen_w = _user32().GetSystemMetrics(0)  # SM_CXSCREEN основного монитора
+        screen_w, _ = self._ws.primary_monitor_size()
         return max(0, (screen_w - width) // 2), 24
 
     def focus(self, window: str) -> None:
-        _user32().SetForegroundWindow(int(window))
+        self._ws.user32.SetForegroundWindow(int(window))
 
     def bind_hotkeys(self, binds: dict[str, str], command: str) -> list[str]:
-        # TODO: RegisterHotKey + цикл GetMessageW в выделенном потоке:
-        #   поток: for key, action in binds: RegisterHotKey(None, id, MOD_WIN|MOD_SHIFT…, vk)
-        #          while GetMessageW(msg): WM_HOTKEY → subprocess command + action
-        #   модификаторы: MOD_WIN=0x8, MOD_SHIFT=0x4, MOD_CONTROL=0x2, MOD_ALT=0x1, MOD_NOREPEAT=0x4000
-        #   vk буквы/цифры — ord(); парсить строки вида "SUPER + SHIFT + O" (SUPER = Win)
-        # Пока возвращаем пусто — «конфликтов нет», но и клавиши не работают: управление — с сайта
-        # и через `sotto ctl <действие>`.
-        log.warning("Хоткеи на Windows ещё не реализованы; управляй суфлёром с сайта или через sotto ctl")
-        return []
+        """Регистрирует хоткеи; возвращает сочетания, занятые чем-то другим (их не трогает)."""
+        from .winsys import Hotkeys
+
+        def on_action(action: str) -> None:
+            argv, env = self._ctl_argv(command, action)
+            try:
+                subprocess.Popen(argv, env=env, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+                                 **proc.CHILD)
+            except OSError:
+                log.exception("Не удалось выполнить действие хоткея %s", action)
+
+        if self._hotkeys is None:
+            self._hotkeys = Hotkeys()
+        accepted = set(self._hotkeys.bind(binds, on_action))
+        return [keys for keys in binds if keys and keys not in accepted]
+
+    def unbind_hotkeys(self, keys: list[str]) -> None:
+        if self._hotkeys is not None:
+            self._hotkeys.close()
+            self._hotkeys = None
+
+    @staticmethod
+    def _ctl_argv(command: str, action: str) -> tuple[list[str], dict[str, str] | None]:
+        """Команда `sotto ctl <action>`: установленный sotto.exe или модуль из исходников."""
+        if command.startswith("env PYTHONPATH="):
+            return [*proc.sotto_argv(), "ctl", action], proc.child_env()
+        return [*shlex.split(command), "ctl", action], None
 
 
 class WindowsPlatform(NullPlatform):
@@ -117,51 +138,64 @@ class WindowsPlatform(NullPlatform):
     def __init__(self, *_: Any, **__: Any):
         self.wm = WindowsWM()
 
-    def clipboard(self) -> str:
-        user32 = _user32()
-        kernel32 = ctypes.windll.kernel32
-        kernel32.GlobalLock.restype = wt.LPVOID
-        cf_unicodetext = 13
-        if not user32.OpenClipboard(None):
-            return ""
-        try:
-            handle = user32.GetClipboardData(cf_unicodetext)
-            if not handle:
-                return ""
-            ptr = kernel32.GlobalLock(handle)
-            if not ptr:
-                return ""
-            try:
-                return ctypes.wstring_at(ptr)
-            finally:
-                kernel32.GlobalUnlock(handle)
-        finally:
-            user32.CloseClipboard()
+    def audio_input(self, mic: str, system: str, on_chunk: Any) -> Any:
+        from .audio import AudioCapture
+        return AudioCapture(mic, system, on_chunk)
+
+    def audio_devices(self) -> dict[str, list[dict[str, str]]]:
+        """Устройства для панели настроек (микрофоны и выходы)."""
+        from . import audio
+        return audio.devices()
+
+    def microphone_users(self, ignore: list[str]) -> list[str]:
+        from . import winsys
+        return winsys.microphone_users(ignore)
+
+    def play(self, samples: np.ndarray, sample_rate: int, target: str | None = None) -> Any:
+        from .audio import Playback
+        return Playback(samples, sample_rate, target)
 
     def screen_locked(self) -> bool:
-        user32 = _user32()
-        desk = user32.OpenInputDesktop(0, False, 0)   # None — экран блокировки / заставка
-        if desk:
-            ctypes.windll.user32.CloseDesktop(desk)
-        return not desk
+        from . import winsys
+        return winsys.screen_locked()
+
+    def screenshot(self, dest: Path, output: str | None = None, region: bool = False) -> Path | None:
+        from . import winsys
+        if region:
+            # Выделение области — отдельным процессом: Qt-цикл не должен жить внутри демона.
+            cmd = [*proc.sotto_argv(), "shot", "--region", str(dest)]
+            res = subprocess.run(cmd, timeout=300, env=proc.child_env(),
+                                 stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, **proc.CHILD)
+            return dest if res.returncode == 0 and Path(dest).exists() else None
+        try:
+            return winsys.screenshot(dest, output)
+        except ImportError:
+            log.warning("Для скриншотов нужны пакеты mss и pillow: pip install sotto[windows]")
+            return None
+
+    def focused_output(self) -> str:
+        return "1"  # основной монитор — номером, который понимает ddagrab и mss
 
     def active_window(self) -> dict[str, Any]:
-        user32 = _user32()
-        hwnd = user32.GetForegroundWindow()
-        if not hwnd:
-            return {}
-        title = ctypes.create_unicode_buffer(user32.GetWindowTextLengthW(hwnd) + 1)
-        user32.GetWindowTextW(hwnd, title, len(title))
-        cls = ctypes.create_unicode_buffer(256)
-        user32.GetClassNameW(hwnd, cls, len(cls))
-        return {"class": cls.value, "title": title.value}
+        from . import winsys
+        return winsys.active_window()
 
     def notify(self, title: str, text: str) -> None:
-        # TODO: win10toast или winrt (Windows.UI.Notifications); MessageBox блокирует — не подходит
-        pass
+        from . import winsys
+        winsys.notify(title, text)
 
-    # TODO: audio_input — WASAPI loopback (soundcard / pyaudiowpatch), куски float32 16 кГц моно
-    # TODO: microphone_users — pycaw (сессии Core Audio → имена процессов)
-    # TODO: play — воспроизведение numpy через sounddevice; target — устройство вывода WASAPI
-    # TODO: screenshot — mss.grab монитора/региона в dest; output — номер монитора
-    # TODO: video_available / record_screen — ffmpeg -f ddagrab (+ h264_nvenc / hevc_amf), сегменты как в linux/screen.py
+    def open_media(self, path: Path, offset_s: float = 0) -> None:
+        from . import winsys
+        winsys.open_path(path, offset_s)
+
+    def clipboard(self) -> str:
+        from . import winsys
+        return winsys.paste_text()
+
+    def video_available(self) -> bool:
+        from . import screen
+        return screen.video_available()
+
+    def record_screen(self, path: Path, fps: int, output: str, settings: Any) -> Any:
+        from .screen import DdaGrabRecorder
+        return DdaGrabRecorder(path, fps, output, settings)

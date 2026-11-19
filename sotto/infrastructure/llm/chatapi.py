@@ -19,7 +19,7 @@ from typing import Any
 import httpx
 import numpy as np
 
-from ...application.ports import LLMError
+from ...application.ports import LLM, LLMError
 
 
 class ChatAPIError(LLMError):
@@ -48,7 +48,7 @@ def wav_bytes(samples: np.ndarray, sample_rate: int = 16000) -> bytes:
     return buf.getvalue()
 
 
-class ChatAPI:
+class ChatAPI(LLM):
     name = "api"
 
     def __init__(self, api_key: str, base_url: str, extra_headers: dict[str, str] | None = None):

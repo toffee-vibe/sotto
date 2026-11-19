@@ -6,6 +6,14 @@ import time
 from collections.abc import Iterable
 from typing import Any
 
+from ...application.ports import (
+    CallRepository,
+    InterviewRepository,
+    LegendRepository,
+    Meta,
+    RecordingRepository,
+    TrainerRepository,
+)
 from ...domain.calls import TRAINING_APP, Call
 from ...domain.companies import norm_company
 from ...domain.interviews import Interview
@@ -17,7 +25,7 @@ _RAW = ", ".join(f"'{s}'" for s in RAW_SOURCES)
 CURATED = f"source NOT IN ({_RAW})"   # темы тренера без сырья для агента
 
 
-class Calls:
+class Calls(CallRepository):
     def __init__(self, db: DB):
         self.db = db
 
@@ -108,7 +116,7 @@ class Calls:
         self.db.update("speakers", speaker_id, name=name)
 
 
-class Legend:
+class Legend(LegendRepository):
     def __init__(self, db: DB):
         self.db = db
 
@@ -138,7 +146,7 @@ class Legend:
         self.db.execute("DELETE FROM legend WHERE lower(trim(company)) = ?", [norm_company(company)])
 
 
-class Interviews:
+class Interviews(InterviewRepository):
     def __init__(self, db: DB):
         self.db = db
 
@@ -162,7 +170,7 @@ class Interviews:
         self.db.execute("DELETE FROM interviews WHERE id = ?", [iid])
 
 
-class Trainer:
+class Trainer(TrainerRepository):
     def __init__(self, db: DB):
         self.db = db
 
@@ -226,7 +234,7 @@ class Trainer:
         self.db.update("trainer_sessions", session_id, ended_at=now, feedback=feedback)
 
 
-class Recordings:
+class Recordings(RecordingRepository):
     def __init__(self, db: DB):
         self.db = db
 
@@ -246,7 +254,7 @@ class Recordings:
         return self.db.all("SELECT * FROM recordings WHERE ended_at IS NULL")
 
 
-class Repositories:
+class Repositories(Meta):
     """Все репозитории одной базы — то, что получают сценарии."""
 
     def __init__(self, db: DB):

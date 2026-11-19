@@ -6,7 +6,6 @@ import pytest
 from sotto import config as config_mod
 from sotto.application.legend import LegendService
 from sotto.application.prompting import system_prompt
-from sotto.domain.jobs import contacts, looks_like_job, text_hash
 from sotto.domain.legend import LegendItem, claims
 from sotto.domain.speech import INTRO, is_hallucination, name_from_intro
 from sotto.domain.transcript import format_transcript
@@ -16,6 +15,7 @@ from sotto.infrastructure.prompts import prompts
 from sotto.infrastructure.sqlite.db import DB
 from sotto.infrastructure.sqlite.repositories import Repositories
 from sotto.interfaces.cli.sim.bench import cer, understood_task
+from sotto.jobs.domain import contacts, looks_like_job, text_hash
 
 
 def test_config_roundtrip(isolated_dirs):

@@ -21,7 +21,7 @@ from urllib.parse import quote
 
 from ... import paths
 from ...config import LinkedIn as LinkedInCfg
-from ...domain.jobs import RawPost
+from ..domain import RawPost
 
 log = logging.getLogger(__name__)
 

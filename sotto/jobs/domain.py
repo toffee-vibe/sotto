@@ -13,7 +13,7 @@ from typing import Any
 
 import numpy as np
 
-from .errors import DomainError
+from sotto.domain.errors import DomainError
 
 STATUSES = ("new", "hidden", "ready", "sent", "replied")
 

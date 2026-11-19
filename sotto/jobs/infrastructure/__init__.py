@@ -6,7 +6,7 @@ from pathlib import Path
 from typing import Any
 
 from ...config import Config
-from ...domain.jobs import RawPost
+from ..domain import RawPost
 
 
 class JobSources:

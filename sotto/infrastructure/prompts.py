@@ -10,6 +10,7 @@ from __future__ import annotations
 from pathlib import Path
 
 from .. import paths
+from ..application.ports import Prompts
 from ..domain.profile import is_filled
 
 # Все промпты: имя файла → (раздел, что делает).
@@ -25,10 +26,8 @@ CATALOG: dict[str, tuple[str, str]] = {
     "postcall": ("Собеседования", "итоги звонка: название, описание, компания, вопросы и темы"),
     "rejection": ("Собеседования", "разбор одного отказа по расшифровкам и подсказкам"),
     "rejections_summary": ("Собеседования", "общий разбор всех отказов"),
-    "interviewer_en": ("Тренировочный интервьюер", "интервьюер на английском"),
-    "interviewer_ru": ("Тренировочный интервьюер", "интервьюер на русском"),
-    "interviewer_plan_en": ("Тренировочный интервьюер", "скрытый план вопросов (английский)"),
-    "interviewer_plan_ru": ("Тренировочный интервьюер", "скрытый план вопросов (русский)"),
+    "interviewer": ("Тренировочный интервьюер", "интервьюер (язык подставляет код)"),
+    "interviewer_plan": ("Тренировочный интервьюер", "скрытый план вопросов (язык подставляет код)"),
     "vacancy": ("Тренировочный интервьюер", "выжимка вакансии: роль, компания, бриф"),
     "trainer_knowledge_interview": ("Голосовой тренер", "знания: пробное собеседование по теме"),
     "trainer_knowledge_lesson": ("Голосовой тренер", "знания: разбор темы с наставником"),
@@ -42,7 +41,7 @@ CATALOG: dict[str, tuple[str, str]] = {
 KINDS = {k: v[1] for k, v in CATALOG.items()}
 
 
-class FilePrompts:
+class FilePrompts(Prompts):
     """Реализация порта Prompts. Каталоги берутся из paths при каждом обращении (тесты их подменяют)."""
 
     @property

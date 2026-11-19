@@ -14,6 +14,7 @@ from typing import Any
 
 import numpy as np
 
+from ..application.ports import SearchIndex
 from .sqlite.db import DB
 
 log = logging.getLogger(__name__)
@@ -22,7 +23,7 @@ MODEL = "sentence-transformers/paraphrase-multilingual-mpnet-base-v2"
 DIM = 768
 
 
-class Search:
+class Search(SearchIndex):
     def __init__(self, db: DB, model: str = MODEL, dim: int = DIM):
         self.db = db
         self.model_name = model

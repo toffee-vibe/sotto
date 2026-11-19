@@ -21,6 +21,7 @@ from collections.abc import Callable
 import numpy as np
 
 from ... import process as proc
+from ...application.ports import AudioInput
 from ...audio import CHUNK, SAMPLE_RATE
 
 log = logging.getLogger(__name__)
@@ -98,7 +99,7 @@ class Stream:
                 time.sleep(1)
 
 
-class AudioCapture:
+class AudioCapture(AudioInput):
     def __init__(self, mic: str, system: str, on_chunk: ChunkCallback):
         self.streams = [
             Stream("me", mic, monitor=False, on_chunk=on_chunk),

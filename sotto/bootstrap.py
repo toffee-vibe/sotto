@@ -22,8 +22,6 @@ from . import paths
 from .application.calls import CallService
 from .application.copilot import Copilot
 from .application.interviews import InterviewService
-from .application.jobs.pipeline import JobsService
-from .application.jobs.resume import ResumeService
 from .application.legend import LegendService
 from .application.listener import Listener
 from .application.postcall import PostCall
@@ -35,7 +33,6 @@ from .application.voice import VoiceRuntime
 from .config import Config
 from .infrastructure import platform as platform_mod
 from .infrastructure.events import EventBus
-from .infrastructure.jobs import JobSources
 from .infrastructure.llm.agents import Agents
 from .infrastructure.llm.router import RoutedLLM
 from .infrastructure.media import FfmpegRecording, remove_parts
@@ -43,9 +40,12 @@ from .infrastructure.platform.null import NullWM
 from .infrastructure.prompts import prompts
 from .infrastructure.search import Search
 from .infrastructure.sqlite.db import DB
-from .infrastructure.sqlite.jobs import JobsStore
 from .infrastructure.sqlite.queries import Queries
 from .infrastructure.sqlite.repositories import Repositories
+from .jobs.application.pipeline import JobsService
+from .jobs.application.resume import ResumeService
+from .jobs.infrastructure import JobSources
+from .jobs.infrastructure.store import JobsStore
 
 log = logging.getLogger(__name__)
 

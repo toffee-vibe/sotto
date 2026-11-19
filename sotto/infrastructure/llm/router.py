@@ -13,13 +13,14 @@ from typing import Any
 
 import numpy as np
 
+from ...application.ports import LLM
 from ...config import Config
 from .chatapi import ChatAPI, Completion
 from .deepseek import DeepSeek
 from .openrouter import OpenRouter
 
 
-class RoutedLLM:
+class RoutedLLM(LLM):
     def __init__(self, cfg: Config):
         self.openrouter = OpenRouter(cfg.api_key, cfg.openrouter.base_url, cfg.openrouter.provider_sort)
         self.providers: dict[str, ChatAPI] = {}

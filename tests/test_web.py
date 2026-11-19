@@ -48,7 +48,7 @@ def test_forms(isolated_dirs):
 
 
 def test_letter_substitution(isolated_dirs):
-    from sotto.domain.jobs import letter_for
+    from sotto.jobs.domain import letter_for
     cluster = {"letter_md": "{greeting}! Хочу на позицию {position} в {company}."}
     assert letter_for({"title": "Go dev", "company": "Ozon"}, cluster) == "Здравствуйте! Хочу на позицию Go dev в Ozon."
     assert letter_for({"letter_override": "своё"}, cluster) == "своё"

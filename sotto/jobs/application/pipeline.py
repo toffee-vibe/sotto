@@ -8,10 +8,10 @@ import time
 from pathlib import Path
 from typing import Any, Protocol
 
+from ...application.ports import AgentError, Agents, Events, Prompts
 from ...config import Config
-from ...domain import jobs as rules
-from ...domain.jobs import RawPost
-from ..ports import AgentError, Agents, Events, Prompts
+from .. import domain as rules
+from ..domain import RawPost
 from .cluster import update_clusters
 from .extract import ingest
 from .resume import ResumeService

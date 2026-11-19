@@ -22,6 +22,7 @@ from collections.abc import Callable
 import numpy as np
 import soundcard as sc
 
+from ...application.ports import AudioInput
 from .select import LoudestPicker
 
 log = logging.getLogger(__name__)
@@ -201,7 +202,7 @@ def system_stream(target: str, on_chunk: ChunkCallback) -> Stream | MultiLoopbac
     return MultiLoopback("them", on_chunk)
 
 
-class AudioCapture:
+class AudioCapture(AudioInput):
     """Порт Platform.audio_input: микрофон + системный звук, start/stop."""
 
     def __init__(self, mic: str, system: str, on_chunk: ChunkCallback):

@@ -19,6 +19,8 @@ from collections.abc import Callable
 from pathlib import Path
 from typing import Any
 
+from ...application.ports import WindowManager
+
 log = logging.getLogger(__name__)
 
 OVERLAY_CLASS = "sotto-overlay"
@@ -307,7 +309,7 @@ def listen_events(on_event: Callable[[str, str], None], stop: threading.Event) -
     return t
 
 
-class HyprlandWM:
+class HyprlandWM(WindowManager):
     """Реализация порта WindowManager для Hyprland."""
 
     def __init__(self, stage_name: str = "SOTTO-STAGE", mirror_on: str = ""):

@@ -11,7 +11,7 @@ from fastapi.responses import FileResponse, HTMLResponse, RedirectResponse
 
 from ... import config as config_mod
 from ...application.ports import AgentError
-from ...infrastructure.jobs import linkedin, telegram
+from ..infrastructure import linkedin, telegram
 
 if TYPE_CHECKING:
     from ...bootstrap import Sotto

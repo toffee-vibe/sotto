@@ -10,10 +10,11 @@ from typing import Any
 
 import numpy as np
 
+from ...application.ports import Platform
 from . import hyprland, pipewire, screen
 
 
-class LinuxPlatform:
+class LinuxPlatform(Platform):
     name = "linux-hyprland"
 
     def __init__(self, stage_name: str = "SOTTO-STAGE", mirror_on: str = ""):

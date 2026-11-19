@@ -11,9 +11,9 @@ import asyncio
 import json
 from typing import Any
 
-from ...domain.jobs import RawPost, contacts, looks_like_job, text_hash
-from ..ports import AgentError, Agents, Prompts
-from ..prompting import render
+from ...application.ports import AgentError, Agents, Prompts
+from ...application.prompting import render
+from ..domain import RawPost, contacts, looks_like_job, text_hash
 
 EXTRACT_PROMPT = """Ниже пронумерованные сообщения из Telegram-каналов и LinkedIn. Для КАЖДОГО реши, является ли оно
 вакансией или постом о найме (компания или рекрутер ищет сотрудника). Резюме соискателей, курсы, реклама,

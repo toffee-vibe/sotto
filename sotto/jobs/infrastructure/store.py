@@ -9,7 +9,7 @@ from typing import Any
 
 import numpy as np
 
-from .db import DB
+from ...infrastructure.sqlite.db import DB
 
 
 class JobsStore:

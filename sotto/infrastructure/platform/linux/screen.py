@@ -9,6 +9,7 @@ from pathlib import Path
 from typing import Any
 
 from ... import process as proc
+from ...application.ports import VideoSegment
 
 log = logging.getLogger(__name__)
 _codecs: dict[tuple[str, str], list[str]] = {}  # (codec, устройство) → аргументы; проба — раз на настройку
@@ -36,7 +37,7 @@ def video_available() -> bool:
     return shutil.which("wf-recorder") is not None
 
 
-class WfRecorder:
+class WfRecorder(VideoSegment):
     """Видео экрана: 2 кадра/с вне звонка и 5 во время звонка — экран в основном статичен, этого хватает.
     ~100–150 МБ в час. Если VAAPI нет — libx265 ultrafast на CPU."""
 

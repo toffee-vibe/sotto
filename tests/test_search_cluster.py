@@ -4,10 +4,10 @@ import time
 
 import numpy as np
 
-from sotto.application.jobs.cluster import update_clusters
 from sotto.infrastructure.search import Search
 from sotto.infrastructure.sqlite.db import DB
-from sotto.infrastructure.sqlite.jobs import JobsStore
+from sotto.jobs.application.cluster import update_clusters
+from sotto.jobs.infrastructure.store import JobsStore
 
 TOPICS = {"kafka": 0, "postgres": 1, "frontend": 2, "react": 2, "go": 3, "golang": 3}
 

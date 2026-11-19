@@ -175,7 +175,7 @@ def main(argv: list[str] | None = None) -> int:
         from ...experimental.translator.cli import main as translate_main
         return translate_main(args.action, args.text)
     if args.cmd == "jobs":
-        from .jobs import run_jobs
+        from ...jobs.interfaces.cli import run_jobs
         return asyncio.run(run_jobs(args.action))
     return 1
 

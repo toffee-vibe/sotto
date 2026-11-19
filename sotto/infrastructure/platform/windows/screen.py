@@ -16,6 +16,7 @@ from pathlib import Path
 from typing import Any
 
 from ... import process as proc
+from ...application.ports import VideoSegment
 
 log = logging.getLogger(__name__)
 _codecs: dict[str, list[str]] = {}  # codec → аргументы; проба — раз на настройку
@@ -53,7 +54,7 @@ def video_available() -> bool:
     return shutil.which("ffmpeg") is not None
 
 
-class DdaGrabRecorder:
+class DdaGrabRecorder(VideoSegment):
     """Видео экрана через ddagrab. output — номер монитора (1 — основной), пусто — основной."""
 
     def __init__(self, path: Path, fps: int, output: str, settings: Any):

@@ -6,8 +6,8 @@ import re
 from collections.abc import Callable
 from typing import Any
 
+from ...application.ports import Agents, Prompts
 from ...domain.legend import LegendItem
-from ..ports import Agents, Prompts
 
 RESUME_RULES = """Правила резюме:
 - Markdown: # Имя, строка контактов, ## Разделы (О себе — 2–3 строки; Навыки; Опыт; Образование; Языки).

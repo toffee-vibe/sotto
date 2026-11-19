@@ -21,12 +21,22 @@ LANGS = {
 
 
 def system_prompt(prompts: Prompts, lang: str, **values: str) -> str:
-    """Инструкция интервьюера — промпт interviewer_<lang> (правится на странице «Промпты»)."""
-    return render(prompts.load(f"interviewer_{lang}"), **values)
+    """Инструкция интервьюера — промпт interviewer (правится на странице «Промпты»)."""
+    return render(prompts.load("interviewer"), lang_rule=LANG_RULE[lang]["speak"],
+                  silence=LANGS[lang]["silence"], **values)
 
 
 def plan_prompt(prompts: Prompts, lang: str, **values: str) -> str:
-    return render(prompts.load(f"interviewer_plan_{lang}"), **values)
+    return render(prompts.load("interviewer_plan"), lang_rule=LANG_RULE[lang]["plan"], **values)
+
+
+LANG_RULE = {
+    "ru": {"speak": "Говори только по-русски, даже если вакансия или резюме на английском.",
+           "plan": "Пиши компактно, без вступлений."},
+    "en": {"speak": "Speak ONLY English, every line, even if the resume and vacancy are in Russian. "
+                    "If the candidate answers in Russian, ask them in English to switch to English.",
+           "plan": "Be compact, no preamble. Write it in English."},
+}
 
 
 CONTEXT = {

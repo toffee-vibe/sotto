@@ -354,9 +354,9 @@ def build_app(s: Sotto) -> FastAPI:
         return back(request)
 
     # ---------------- разделы ----------------
+    from ...jobs.interfaces.web import register as register_jobs
     from .chat import register as register_chat
     from .interviews import register as register_interviews
-    from .jobs import register as register_jobs
     from .trainer import register as register_trainer
     register_trainer(app, s, page)
     register_interviews(app, s, page)

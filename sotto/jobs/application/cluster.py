@@ -14,8 +14,8 @@ from typing import Any
 
 import numpy as np
 
-from ...domain.jobs import centroid, group, nearest
-from ..ports import AgentError, Agents
+from ...application.ports import AgentError, Agents
+from ..domain import centroid, group, nearest
 
 
 def _texts(rows: list[dict[str, Any]]) -> list[str]:

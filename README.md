@@ -357,21 +357,26 @@ sotto/
     hints.py         когда суфлёр отвечает, а когда молчит (поддакивание, обрывки, кашель)
     speech.py        мусор Whisper, эхо, имена из представлений
     training.py      темы тренера, интервальное повторение
-    jobs.py          что считать вакансией, контакты, письмо под вакансию, лимиты отправки
+  jobs/              ИЗОЛИРОВАННЫЙ контекст «вакансии и отклики»: свои слои внутри, снаружи видна
+                     только сборка в bootstrap.py. Удаляется целиком вместе с extra `jobs`.
+    domain.py        что считать вакансией, контакты, письмо под вакансию, лимиты отправки
+    application/     сценарии: сбор, кластеризация, резюме
+    infrastructure/  Telegram, LinkedIn, почта, PDF, store.py (SQL)
+    interfaces/      web.py и cli.py (страница и команда `sotto jobs`)
   application/       сценарии; работают только с доменом и портами
-    ports.py         интерфейсы: репозитории, модель, агенты, промпты, Platform (всё, что зависит от ОС)
+    ports.py         абстрактные классы портов: репозитории, модель, агенты, промпты, Platform
+                     (реализации наследуют их — видно, какой порт закрывает класс)
     voice.py         голосовой суфлёр: звук → звонок → реплики → подсказки, оверлей, хоткеи
     copilot.py       движок подсказок (упреждение, ручной и авто-режимы)
     listener.py      звук → реплика: VAD, кто говорит, распознавание
     interviews.py    план собеседований, привязка звонков, разбор отказов (команды)
-    legend.py, topics.py, postcall.py, textchat.py, trainer.py, recording.py, jobs/
+    legend.py, topics.py, postcall.py, textchat.py, trainer.py, recording.py
   infrastructure/    реализации портов
     sqlite/          схема; repositories.py — запись (команды); queries.py — чтение для страниц (CQRS)
     platform/        linux/ (PipeWire, Hyprland, wf-recorder, grim), windows/ (WASAPI, Win32, ddagrab)
                      и null (без рабочего стола)
     llm/             OpenRouter и CLI-агенты
     audio/           VAD, Whisper, голосовые отпечатки, синтез — без привязки к ОС
-    jobs/            Telegram, LinkedIn, почта, PDF
     prompts.py, search.py, media.py (ffmpeg), events.py
   interfaces/        адаптеры для человека: web/ (FastAPI + Jinja2), cli/, overlay.py (Qt)
   bootstrap.py       корень композиции: единственное место, где всё собирается вместе
@@ -395,15 +400,18 @@ CQRS — только там, где он нужен: страницам сай�
 * **Новый тип подсказки:** промпт в `sotto/prompts/`, метод в `application/copilot.py`, ветка в
   `VoiceRuntime.action()` и хоткей в `config.Hotkeys`.
 
-Разработка:
+Разработка (нужен только [uv](https://docs.astral.sh/uv), nix не обязателен):
 
 ```bash
-nix develop                          # или nix develop .#cuda
-pre-commit install                   # один раз: хуки перед коммитом и пушем
-python -m pytest                     # тесты без звука, окон и сети
-ruff check sotto tests && mypy       # линтер и типы (домен и сценарии)
-python -m sotto run --no-overlay --no-hyprland   # без окон и хоткеев
+uv sync --group dev                  # зависимости проекта + инструменты
+uv run pre-commit install            # один раз: хуки перед коммитом и пушем
+uv run pytest                        # тесты без звука, окон и сети
+uv run ruff check sotto tests && uv run mypy   # линтер и типы (домен и сценарии)
+uv run python -m sotto run --no-overlay --no-hyprland   # без окон и хоткеев
 ```
+
+Альтернатива — nix (`nix develop`, или `nix develop .#cuda` для локального Whisper на NVIDIA):
+то же окружение плюс CUDA-библиотеки.
 
 Хуки (`.pre-commit-config.yaml`, всё локально, из сети ничего не качается):
 * **pre-commit** — пробелы и концы файлов, TOML/YAML, большие файлы, приватные ключи, ключи API и пароли,

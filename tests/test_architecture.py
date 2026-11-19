@@ -32,6 +32,8 @@ KNOWN_EXCEPTIONS = {
     ("application/voice.py", "sotto.infrastructure.audio"),
     ("application/voice.py", "sotto.infrastructure.process"),
 }
+# Изолированные контексты со своими слоями domain/application/infrastructure/interfaces внутри.
+CONTEXTS = ("jobs",)
 
 
 def _module(path: Path) -> str:
@@ -58,14 +60,17 @@ def _imports(path: Path) -> list[str]:
 
 
 def test_layers_point_inward():
+    # Контексты (sotto/jobs/) повторяют те же слои внутри себя.
+    roots = [ROOT] + [ROOT / ctx for ctx in CONTEXTS]
     violations = []
-    for layer, banned in FORBIDDEN.items():
-        for path in (ROOT / layer).rglob("*.py"):
-            rel = str(path.relative_to(ROOT))
-            for imp in _imports(path):
-                hit = next((b for b in banned if imp == b or imp.startswith(b + ".")), None)
-                if hit and not any(rel == f and imp.startswith(prefix) for f, prefix in KNOWN_EXCEPTIONS):
-                    violations.append(f"{rel}: {imp}")
+    for root in roots:
+        for layer, banned in FORBIDDEN.items():
+            for path in (root / layer).rglob("*.py") if (root / layer).exists() else []:
+                rel = str(path.relative_to(ROOT))
+                for imp in _imports(path):
+                    hit = next((b for b in banned if imp == b or imp.startswith(b + ".")), None)
+                    if hit and not any(rel == f and imp.startswith(prefix) for f, prefix in KNOWN_EXCEPTIONS):
+                        violations.append(f"{rel}: {imp}")
     assert not violations, "Зависимость против слоёв:\n" + "\n".join(sorted(set(violations)))
 
 
@@ -88,6 +93,8 @@ def test_sql_only_in_infrastructure():
     for path in ROOT.rglob("*.py"):
         rel = path.relative_to(ROOT)
         if rel.parts[0] == "infrastructure" or rel.parts[0] == "experimental":
+            continue
+        if len(rel.parts) > 1 and rel.parts[1] == "infrastructure":  # инфраструктура контекста (sotto/jobs/…)
             continue
         text = path.read_text(encoding="utf-8")
         if re.search(r"\bdb\.(all|one|execute|insert|update)\(|\b(SELECT|INSERT INTO|DELETE FROM)\b", text):

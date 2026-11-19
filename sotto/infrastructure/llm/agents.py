@@ -22,6 +22,7 @@ from pathlib import Path
 from typing import Any
 
 from ...application.ports import AgentError
+from ...application.ports import Agents as AgentsPort
 from ...config import Agents as AgentsCfg
 from .. import process as proc_mod
 from ..sqlite.db import DB
@@ -90,7 +91,7 @@ FILE_PREAMBLE = (
 )
 
 
-class Agents:
+class Agents(AgentsPort):
     def __init__(self, db: DB, cfg: AgentsCfg):
         self.db = db
         self.cfg = cfg  # живая ссылка на настройки — изменения из панели применяются сразу

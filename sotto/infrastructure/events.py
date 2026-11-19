@@ -10,8 +10,10 @@ import asyncio
 import time
 from typing import Any
 
+from ..application.ports import Events
 
-class EventBus:
+
+class EventBus(Events):
     def __init__(self) -> None:
         self._subscribers: set[asyncio.Queue] = set()
         self._loop: asyncio.AbstractEventLoop | None = None

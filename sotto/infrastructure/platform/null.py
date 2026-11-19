@@ -13,8 +13,10 @@ from typing import Any
 
 import numpy as np
 
+from ...application.ports import AudioInput, Platform, WindowManager
 
-class _Silent:
+
+class _Silent(AudioInput):
     def start(self) -> None: ...
     def stop(self) -> None: ...
 
@@ -29,7 +31,7 @@ class _Done:
     def terminate(self) -> None: ...
 
 
-class NullWM:
+class NullWM(WindowManager):
     stage_name = "SOTTO-STAGE"
 
     def available(self) -> bool:
@@ -69,7 +71,7 @@ class NullWM:
         return "Сцена не поддерживается на этой системе"
 
 
-class NullPlatform:
+class NullPlatform(Platform):
     name = "null"
 
     def __init__(self, *_: Any, **__: Any):

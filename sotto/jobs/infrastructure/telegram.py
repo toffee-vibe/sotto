@@ -20,7 +20,7 @@ from pathlib import Path
 
 from ... import paths
 from ...config import Telegram as TelegramCfg
-from ...domain.jobs import RawPost
+from ..domain import RawPost
 
 log = logging.getLogger(__name__)
 

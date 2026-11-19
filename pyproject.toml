@@ -11,7 +11,7 @@ requires-python = ">=3.12"
 license = { text = "MIT" }
 dependencies = [
   "fastapi", "uvicorn", "httpx", "jinja2", "python-multipart", "pydantic",
-  "numpy", "sherpa-onnx", "faster-whisper", "fastembed", "sqlite-vec",
+  "numpy", "sherpa-onnx>=1.12,<2", "faster-whisper", "fastembed", "sqlite-vec",
   "PySide6", "markdown",
 ]
 
@@ -21,6 +21,10 @@ windows = ["soundcard", "mss", "pillow"]
 # Вакансии и PDF-резюме: тяжёлые и нужны не всем — pip install sotto[jobs]. Playwright тянет Chromium
 # (playwright install chromium), weasyprint на Windows требует GTK/Pango — см. README.
 jobs = ["telethon", "playwright", "weasyprint"]
+
+[dependency-groups]
+# Инструменты разработки: uv sync --group dev (nix не нужен). CUDA для локального Whisper — отдельно, см. README.
+dev = ["pytest", "pytest-asyncio", "ruff", "mypy", "pre-commit"]
 
 [project.scripts]
 sotto = "sotto.cli:main"
@@ -54,7 +58,7 @@ ignore = [
 
 [tool.mypy]
 python_version = "3.12"
-packages = ["sotto.domain", "sotto.application"]
+packages = ["sotto.domain", "sotto.application", "sotto.jobs.domain", "sotto.jobs.application"]
 ignore_missing_imports = true
 follow_imports = "silent"
 warn_unused_ignores = true

@@ -16,3 +16,6 @@ vacancy.txt
 *.mkv
 *.opus
 .env
+
+# IDE
+.idea/

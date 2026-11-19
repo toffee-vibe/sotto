@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from ... import config as config_mod
 from ... import paths
-from ...infrastructure.jobs import linkedin, telegram
+from ..infrastructure import linkedin, telegram
 
 
 async def run_jobs(action: str) -> int:
@@ -23,6 +23,6 @@ async def run_jobs(action: str) -> int:
     if action == "fetch":
         print(await app.jobs.fetch_all())
     elif action == "cluster":
-        from ...application.jobs.cluster import update_clusters
+        from ..application.cluster import update_clusters
         print(await update_clusters(app.jobs_repo, app.search, app.agents))
     return 0

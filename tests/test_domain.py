@@ -9,8 +9,8 @@ from sotto.domain import interviews as iv
 from sotto.domain.calls import Call
 from sotto.domain.errors import DomainError
 from sotto.domain.interviews import Interview, Status
-from sotto.domain.jobs import SendLimit, check_send, letter_for, override, resume_for
 from sotto.domain.legend import LegendItem
+from sotto.jobs.domain import SendLimit, check_send, letter_for, override, resume_for
 
 NOW = 1_800_000_000.0
 

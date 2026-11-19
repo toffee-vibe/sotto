@@ -14,6 +14,7 @@ from __future__ import annotations
 import asyncio
 import logging
 import random
+import sys
 from collections.abc import Callable
 from pathlib import Path
 
@@ -27,10 +28,15 @@ SESSION = paths.JOBS_DIR / "telegram"
 
 
 def _client(cfg: TelegramCfg):
-    from telethon import TelegramClient
+    try:
+        from telethon import TelegramClient
+    except ImportError as e:
+        raise RuntimeError("Для вакансий из Telegram нужны зависимости: pip install sotto[jobs] "
+                           "(в nix-окружении они уже есть)") from e
     if not cfg.api_id or not cfg.api_hash:
         raise RuntimeError("Не заданы api_id/api_hash Telegram (Вакансии → Настройки источников)")
-    return TelegramClient(str(SESSION), cfg.api_id, cfg.api_hash, device_model="Sotto", system_version="Linux")
+    return TelegramClient(str(SESSION), cfg.api_id, cfg.api_hash, device_model="Sotto",
+                          system_version="Windows" if sys.platform == "win32" else "Linux")
 
 
 async def login(cfg: TelegramCfg) -> None:
@@ -50,7 +56,10 @@ async def fetch(cfg: TelegramCfg, cursor: Callable[[str], str | None], queries: 
                 per_channel: int = 150) -> tuple[list[RawPost], dict[str, str]]:
     """Возвращает (сообщения, новые курсоры каналов). Курсоры сохраняет вызывающий — после разбора,
     чтобы при сбое агента сообщения не потерялись."""
-    from telethon import errors, functions, types
+    try:
+        from telethon import errors, functions, types
+    except ImportError as e:
+        raise RuntimeError("Для вакансий из Telegram нужны зависимости: pip install sotto[jobs]") from e
 
     client = _client(cfg)
     await client.connect()

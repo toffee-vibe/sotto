@@ -14,6 +14,7 @@ import asyncio
 import logging
 import random
 import re
+import sys
 import time
 from typing import Any
 from urllib.parse import quote
@@ -25,7 +26,11 @@ from ...domain.jobs import RawPost
 log = logging.getLogger(__name__)
 
 PROFILE_DIR = paths.JOBS_DIR / "linkedin-browser"
-UA = ("Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) "
+# User-Agent обязан совпадать с платформой: LinkedIn сравнивает его с TLS/рендер-отпечатком,
+# и вход на Windows под Linux-строкой — прямой путь на чекпоинт или бан.
+UA = ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) "
+      "Chrome/140.0.0.0 Safari/537.36" if sys.platform == "win32"
+      else "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) "
       "Chrome/140.0.0.0 Safari/537.36")
 
 
@@ -58,7 +63,10 @@ async def _context(p, headless: bool):
 
 async def login() -> None:
     """Открывает окно браузера для ручного входа. Закрой окно, когда увидишь ленту."""
-    from playwright.async_api import async_playwright
+    try:
+        from playwright.async_api import async_playwright
+    except ImportError as e:
+        raise RuntimeError("Для LinkedIn нужны зависимости: pip install sotto[jobs] && playwright install chromium") from e
     async with async_playwright() as p:
         ctx = await _context(p, headless=False)
         page = ctx.pages[0] if ctx.pages else await ctx.new_page()
@@ -84,7 +92,10 @@ async def _human_scroll(page, times: int) -> None:
 
 async def fetch(cfg: LinkedInCfg, db: Any, queries: list[str]) -> list[RawPost]:
     """db — хранилище вакансий: суточный бюджет страниц (meta) и «уже видели» (known)."""
-    from playwright.async_api import async_playwright
+    try:
+        from playwright.async_api import async_playwright
+    except ImportError as e:
+        raise RuntimeError("Для LinkedIn нужны зависимости: pip install sotto[jobs] && playwright install chromium") from e
 
     budget = PageBudget(db, cfg.daily_page_limit)
     posts: list[RawPost] = []

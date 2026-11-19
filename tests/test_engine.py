@@ -207,3 +207,86 @@ async def test_cough_while_candidate_speaks_keeps_hint(isolated_dirs):
     cp.on_utterance("them")
     await asyncio.sleep(0.3)
     assert db.one("SELECT COUNT(*) AS n FROM answers")["n"] == 1
+
+
+class _ProfilePrompts:
+    """prompts с подменённым профилем (родной язык для обрезки неродного)."""
+
+    def __init__(self, base, profile):
+        self._base, self._profile = base, profile
+
+    def load(self, kind):
+        return self._base.load(kind)
+
+    def profile(self):
+        return self._profile
+
+
+async def test_short_style(isolated_dirs):
+    """Режим тезисов: один слот main с промптом answer_short."""
+    cp, db, bus, llm = await make(["ключ идемпотентности\nповтор безопасен"], mode="manual")
+    cp.cfg.answer.style = "short"
+    q = bus.subscribe()
+    await cp.answer("manual")
+    await asyncio.sleep(0.3)
+    events = [q.get_nowait() for _ in range(q.qsize())]
+    dones = [e for e in events if e["type"] == "answer.done"]
+    assert [e["slot"] for e in dones] == ["main"]
+    assert "ТЕЗИСАМИ" in llm.calls[0][0]["content"]
+
+
+async def test_nonnative_trim_never_shrinks_on_screen(isolated_dirs):
+    """Обрезка неродного языка идёт по ходу стрима: финальный текст совпадает с показанным,
+    показанное никогда не откатывается назад (кандидат читает вслух)."""
+    reply = ("I kept a record of every removed permission so the sync could replay safely. "
+             "Then the worker retried the failed rows one by one. After that we alerted on lag.")
+    cp, db, bus, llm = await make([reply], mode="manual")
+    cp.prompts = _ProfilePrompts(prompts, "Русский — родной\nGo, 5 лет")
+    cp.cfg.answer.nonnative_word_limit = 20
+    q = bus.subscribe()
+    await cp.answer("manual")
+    await asyncio.sleep(0.4)
+    events = [q.get_nowait() for _ in range(q.qsize())]
+    deltas = [e["text"] for e in events if e["type"] == "answer.delta"]
+    shown = "".join(deltas)
+    done = [e for e in events if e["type"] == "answer.done"]
+    assert done and done[0]["text"] == shown  # финал не откатил то, что уже читали с экрана
+    assert "alerted on lag" not in shown  # хвост за лимитом на экран не попал
+
+
+async def test_trainer_prefers_fast_llm(isolated_dirs):
+    """Тренер с настроенным LLM не зовёт CLI-агента; при сбое LLM — откат на агента."""
+    from sotto.application.trainer import TrainerSession
+
+    class AgentsFail:
+        async def run_json(self, prompt, **kw):
+            raise AssertionError("CLI-агент не нужен, когда LLM ответил")
+
+    class ChatLLM:
+        configured = True
+
+        def __init__(self, text=None, fail=False):
+            self.text, self.fail = text, fail
+
+        async def chat(self, model, messages, **kw):
+            if self.fail:
+                raise RuntimeError("api down")
+            from sotto.infrastructure.llm.chatapi import Completion
+            return Completion(model=model, text=self.text)
+
+    class AgentsOK:
+        async def run_json(self, prompt, **kw):
+            return {"say": "from agent"}, "claude"
+
+    cfg = config_mod.Config()
+    db = DB()
+    repos = Repositories(db)
+    bus = EventBus()
+    loop = asyncio.get_running_loop()
+    bus.bind(loop)
+    ts = TrainerSession(cfg, repos.trainer, AgentsFail(), prompts, bus, loop, "knowledge", "postgres",
+                        llm=ChatLLM('{"say": "Hi", "done": true}'))
+    assert await ts._ask_coach("prompt") == {"say": "Hi", "done": True}
+    ts = TrainerSession(cfg, repos.trainer, AgentsOK(), prompts, bus, loop, "knowledge", "postgres",
+                        llm=ChatLLM(fail=True))
+    assert await ts._ask_coach("prompt") == {"say": "from agent"}

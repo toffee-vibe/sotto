@@ -12,12 +12,15 @@ license = { text = "MIT" }
 dependencies = [
   "fastapi", "uvicorn", "httpx", "jinja2", "python-multipart", "pydantic",
   "numpy", "sherpa-onnx", "faster-whisper", "fastembed", "sqlite-vec",
-  "PySide6", "telethon", "playwright", "markdown", "weasyprint",
+  "PySide6", "markdown",
 ]
 
 [project.optional-dependencies]
 # Windows 11: захват звука WASAPI (soundcard), скриншоты (mss + pillow). FFmpeg — отдельно, не из pip.
 windows = ["soundcard", "mss", "pillow"]
+# Вакансии и PDF-резюме: тяжёлые и нужны не всем — pip install sotto[jobs]. Playwright тянет Chromium
+# (playwright install chromium), weasyprint на Windows требует GTK/Pango — см. README.
+jobs = ["telethon", "playwright", "weasyprint"]
 
 [project.scripts]
 sotto = "sotto.cli:main"

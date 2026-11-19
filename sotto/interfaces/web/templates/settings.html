@@ -46,6 +46,7 @@
       <option value="manual" {% if c.answer.mode == "manual" %}selected{% endif %}>только по хоткею</option></select></div>
     <div class="field"><label>Вид</label><select name="answer.style">
       <option value="single" {% if c.answer.style == "single" %}selected{% endif %}>один ответ средней длины</option>
+      <option value="short" {% if c.answer.style == "short" %}selected{% endif %}>тезисы-опоры (говоришь своими словами)</option>
       <option value="dual" {% if c.answer.style == "dual" %}selected{% endif %}>короткий и подробный</option></select></div>
     <div class="field"><label>Контекст, минут разговора</label><input type="number" name="answer.context_minutes" value="{{ c.answer.context_minutes }}"></div>
     <div class="field"><label>Пауза перед подсказкой, мс</label><input type="number" name="answer.auto_pause_ms" value="{{ c.answer.auto_pause_ms }}"></div>

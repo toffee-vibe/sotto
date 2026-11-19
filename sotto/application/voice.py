@@ -177,8 +177,11 @@ class VoiceRuntime:
             mode = self.copilot.toggle_mode()
             self.bus.publish("notice", {"text": "Авто-ответы" if mode == "auto" else "Ответы по хоткею"})
         elif name == "toggle_style":
-            self.cfg.answer.style = "dual" if self.cfg.answer.style == "single" else "single"
-            self.bus.publish("notice", {"text": f"Стиль ответа: {self.cfg.answer.style}"})
+            order = ["single", "short", "dual"]
+            styles = {"single": "один ответ", "short": "тезисы", "dual": "короткий + подробный"}
+            self.cfg.answer.style = order[(order.index(self.cfg.answer.style) + 1) % len(order)] \
+                if self.cfg.answer.style in order else "single"
+            self.bus.publish("notice", {"text": f"Стиль ответа: {styles[self.cfg.answer.style]}"})
         elif name == "toggle_record_only":
             self.copilot.record_only = not self.copilot.record_only
             self.bus.publish("notice", {"text": "Только запись" if self.copilot.record_only else "Подсказки включены"})

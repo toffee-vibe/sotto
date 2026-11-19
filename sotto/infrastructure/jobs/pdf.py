@@ -23,7 +23,11 @@ a { color: #1a4fd6; text-decoration: none; }
 
 
 def render_pdf(markdown_text: str, name: str) -> Path:
-    from weasyprint import HTML
+    try:
+        from weasyprint import HTML
+    except ImportError as e:
+        raise RuntimeError("Для PDF-резюме нужны зависимости: pip install sotto[jobs] "
+                           "(weasyprint на Windows требует GTK/Pango — см. README)") from e
     out_dir = paths.JOBS_DIR / "pdf"
     out_dir.mkdir(parents=True, exist_ok=True)
     safe = re.sub(r"[^\w\-]+", "_", name).strip("_")[:60] or "resume"

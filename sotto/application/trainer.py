@@ -1,5 +1,6 @@
 """Голосовая тренировка: тренер говорит (локальный синтез), ты отвечаешь голосом (локальное
-распознавание), ход разговора и разбор ведёт CLI-агент. Текст — только как обратная связь.
+распознавание), ход разговора и разбор ведёт LLM по API (быстро) или CLI-агент (медленно).
+Текст — только как обратная связь.
 
 Два тренера:
   knowledge — собеседование по знаниям (mode=interview) или разбор темы (mode=lesson);
@@ -21,18 +22,20 @@ from ..config import Config
 from ..domain import training
 from ..infrastructure.audio import local_stt, tts
 from ..infrastructure.audio.vad import ChannelVAD
-from .ports import AgentError, Agents, Events, Prompts, TrainerRepository
-from .prompting import render
+from .ports import LLM, AgentError, Agents, Events, Prompts, TrainerRepository
+from .prompting import parse_json_object, render
 
 log = logging.getLogger(__name__)
 
 
 class TrainerSession:
     def __init__(self, cfg: Config, store: TrainerRepository, agents: Agents, prompts: Prompts, events: Events,
-                 loop: asyncio.AbstractEventLoop, kind: str, topic: str, mode: str = "interview"):
+                 loop: asyncio.AbstractEventLoop, kind: str, topic: str, mode: str = "interview",
+                 llm: LLM | None = None):
         self.cfg = cfg
         self.store = store
         self.agents = agents
+        self.llm = llm
         self.prompts = prompts
         self.events = events
         self.loop = loop
@@ -105,12 +108,8 @@ class TrainerSession:
         prompt = (f"{persona}\n\nПрофиль пользователя:\n{self.prompts.profile() or '(не заполнен)'}\n\n"
                   f"Разговор до сих пор:\n{dialog or '(ещё не начинали — начни: поприветствуй коротко и задай первый вопрос)'}\n"
                   f"\n{self.prompts.load('trainer_turn')}")
-        try:
-            reply, _agent = await self.agents.run_json(prompt, task=f"тренер {self.kind}")
-        except AgentError as e:
-            self.events.publish("notice", {"text": f"Тренер: {e}"[:200]})
-            return None
-        if not isinstance(reply, dict):
+        reply = await self._ask_coach(prompt)
+        if reply is None:
             return None
         if user_text is not None and self.history:
             # Разбор относится к последнему ответу пользователя.
@@ -126,6 +125,26 @@ class TrainerSession:
             self.store.add_turn(self.session_id, "coach", say, time.time())
             self.events.publish("trainer.turn", {"session_id": self.session_id, "role": "coach", "text": say})
         return reply
+
+    async def _ask_coach(self, prompt: str) -> dict[str, Any] | None:
+        """Ход тренера. С настроенным LLM — быстрый запрос по API (диалог живой: секунда-две на
+        реплику); без него — CLI-агент, как раньше (холодный старт claude/codex — 8–20 с тишины)."""
+        if self.llm is not None and self.llm.configured:
+            try:
+                res = await self.llm.chat(self.cfg.models.answer, [{"role": "user", "content": prompt}],
+                                          max_tokens=700, json_mode=True)
+                reply = parse_json_object(res.text)
+                if isinstance(reply, dict):
+                    return reply
+                log.warning("Тренер: LLM вернул не JSON, пробую CLI-агента")
+            except Exception as e:  # noqa: BLE001 — ниже запасной путь через агента
+                log.warning("Тренер: LLM не ответил (%s), пробую CLI-агента", str(e)[:120])
+        try:
+            reply, _agent = await self.agents.run_json(prompt, task=f"тренер {self.kind}")
+        except AgentError as e:
+            self.events.publish("notice", {"text": f"Тренер: {e}"[:200]})
+            return None
+        return reply if isinstance(reply, dict) else None
 
     async def _speak(self, text: str) -> None:
         if not text:

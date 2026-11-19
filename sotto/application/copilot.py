@@ -40,6 +40,7 @@ def since(minutes: int) -> float:
 class _Stream:
     sent: int = 0
     text: str = ""
+    display: str = ""  # что реально показано в оверлее (после обрезки неродного языка)
 
 
 class _Speculation:
@@ -187,6 +188,9 @@ class Copilot:
         if self.cfg.answer.style == "dual":
             jobs = [("short", "answer_short", self.cfg.models.answer_short, 250),
                     ("detailed", "answer_detailed", self.cfg.models.answer_detailed, self.cfg.answer.max_tokens * 2)]
+        elif self.cfg.answer.style == "short":
+            # Тезисы вместо готового текста: кандидат говорит своими словами, чтение не палится.
+            jobs = [("main", "answer_short", self.cfg.models.answer_short, 250)]
         else:
             jobs = [("main", "answer", self.cfg.models.answer, self.cfg.answer.max_tokens)]
         for slot, prompt_kind, model, max_tokens in jobs:
@@ -269,11 +273,17 @@ class Copilot:
             # Пока непонятно, не «∅» ли это, ничего не показываем: иначе затрём прошлый ответ.
             if text.startswith(SKIP) or len(text) < 2 or (spec and not spec.visible):
                 return
-            if len(text) > state.sent:
-                self.bus.publish("answer.delta", {"id": answer_id, "slot": slot, "text": text[state.sent:]})
-                state.sent = len(text)
+            # Обрезка неродного языка идёт по ходу стрима, а не в конце: кандидат читает вслух,
+            # и текст не должен исчезать с экрана на полуслове. Поэтому показанное только растёт:
+            # если модель вышла за лимит, обрезка замораживается на последнем показанном куске.
+            trimmed = hints.trim_nonnative(text, self.prompts.profile(), self.cfg.answer.nonnative_word_limit)
+            if len(trimmed) >= len(state.display):
+                state.display = trimmed
+            if len(state.display) > state.sent:
+                self.bus.publish("answer.delta", {"id": answer_id, "slot": slot, "text": state.display[state.sent:]})
+                state.sent = len(state.display)
                 if slot == "main":
-                    self.last_hint = text
+                    self.last_hint = state.display
 
         finished: list[Any] = []
 
@@ -282,7 +292,7 @@ class Copilot:
                 finished.append(result)  # дописали раньше, чем реплика подтвердилась
                 await spec.revealed.wait()
             show()
-            await self._finish(answer_id, slot, kind, result, rows)
+            await self._finish(answer_id, slot, kind, result, rows, shown=state.display.strip())
 
         if spec:
             def on_reveal() -> None:
@@ -321,9 +331,11 @@ class Copilot:
                 await stream.aclose()  # type: ignore[attr-defined]  # оборванная генерация закрывает HTTP-поток сразу
 
     async def _finish(self, answer_id: str, slot: str, kind: str, result: Any,
-                      rows: list[dict[str, Any]]) -> None:
-        text = hints.trim_nonnative(result.text.strip(), self.prompts.profile(),
-                                    self.cfg.answer.nonnative_word_limit)
+                      rows: list[dict[str, Any]], shown: str = "") -> None:
+        # shown — текст, который кандидат уже видел и, возможно, читает вслух: финальный текст
+        # обязан совпадать с ним, иначе подсказка исчезнет с экрана на полуслове.
+        text = shown or hints.trim_nonnative(result.text.strip(), self.prompts.profile(),
+                                             self.cfg.answer.nonnative_word_limit)
         if hints.is_skip(text):
             self.bus.publish("answer.skip", {"id": answer_id, "slot": slot})
             return

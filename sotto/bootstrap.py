@@ -145,7 +145,7 @@ class Sotto:
     def trainer_session(self, kind: str, topic: str, mode: str) -> TrainerSession:
         assert self.voice.loop is not None
         return TrainerSession(self.cfg, self.repos.trainer, self.agents, prompts, self.bus, self.voice.loop,
-                              kind, topic.strip() or self.topics.pick(kind), mode)
+                              kind, topic.strip() or self.topics.pick(kind), mode, llm=self.llm)
 
     def reload_config(self) -> None:
         """Перечитать config.toml без перезапуска. Объекты настроек обновляются на месте, поэтому

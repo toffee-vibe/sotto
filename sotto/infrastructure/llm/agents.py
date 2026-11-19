@@ -56,12 +56,8 @@ def _json_result(out: str, _wd: Path) -> str:
     return out
 
 
-def _arg(p: str | None) -> list[str]:
-    return [p] if p is not None else []
-
-
 AGENTS: dict[str, AgentSpec] = {
-    "claude": AgentSpec("claude", "claude", lambda p, wd: ["claude", "-p", *_arg(p), "--output-format", "json"],
+    "claude": AgentSpec("claude", "claude", lambda p, wd: ["claude", "-p", *([p] if p is not None else []), "--output-format", "json"],
                         _json_result, stdin=True),
     "codex": AgentSpec("codex", "codex",
                        lambda p, wd: ["codex", "exec", "--skip-git-repo-check", "--sandbox", "read-only",

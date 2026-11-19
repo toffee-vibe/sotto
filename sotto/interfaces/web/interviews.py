@@ -16,10 +16,6 @@ if TYPE_CHECKING:
     from ...bootstrap import Sotto
 
 
-def _local(ts: float | None) -> str:
-    """Время → значение поля datetime-local."""
-    return datetime.fromtimestamp(ts).strftime("%Y-%m-%dT%H:%M") if ts else ""
-
 
 def _to(iid: int | None) -> RedirectResponse:
     return RedirectResponse(f"/interviews/{iid}" if iid else "/interviews", status_code=303)
@@ -55,7 +51,9 @@ def register(app: FastAPI, s: Sotto, page: Callable[..., HTMLResponse]) -> None:
         data = s.queries.interview_page(iid)
         if data is None:
             return _to(None)
-        return page(request, "interview.html", when=_local(data["iv"].scheduled_at), statuses=STATUSES, **data)
+        ts = data["iv"].scheduled_at
+        when = datetime.fromtimestamp(ts).strftime("%Y-%m-%dT%H:%M") if ts else ""  # для поля datetime-local
+        return page(request, "interview.html", when=when, statuses=STATUSES, **data)
 
     @app.post("/interviews/{iid}")
     async def interview_edit(iid: int, company: str = Form(...), role: str = Form(""), stage: str = Form(""),

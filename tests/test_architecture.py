@@ -30,6 +30,7 @@ KNOWN_EXCEPTIONS = {
     ("application/listener.py", "sotto.infrastructure.audio"),
     ("application/trainer.py", "sotto.infrastructure.audio"),
     ("application/voice.py", "sotto.infrastructure.audio"),
+    ("application/voice.py", "sotto.infrastructure.process"),
 }
 
 

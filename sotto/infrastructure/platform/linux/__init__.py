@@ -60,6 +60,12 @@ class LinuxPlatform:
         except (OSError, subprocess.SubprocessError):
             return ""
 
+    def copy_text(self, text: str) -> None:
+        try:
+            subprocess.run(["wl-copy"], input=text.encode(), check=False, timeout=3)
+        except (OSError, subprocess.SubprocessError):
+            pass
+
     def video_available(self) -> bool:
         return screen.video_available()
 

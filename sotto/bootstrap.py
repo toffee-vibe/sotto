@@ -66,7 +66,10 @@ def _save_overlay_geometry(geo: tuple[int, int, int, int]) -> None:
 
 
 def _spawn(cmd: list[str]) -> subprocess.Popen:
-    return subprocess.Popen(cmd, start_new_session=True)
+    from .infrastructure import process as proc
+    # Оверлей со своим окном: на Windows — без start_new_session (там его нет) и с PYTHONPATH
+    # для запуска из исходников; на POSIX — своя сессия, как раньше.
+    return subprocess.Popen(cmd, env=proc.child_env() if proc.WINDOWS else None, **proc.DETACHED)
 
 
 class Sotto:

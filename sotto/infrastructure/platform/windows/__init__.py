@@ -192,6 +192,10 @@ class WindowsPlatform(NullPlatform):
         from . import winsys
         return winsys.paste_text()
 
+    def copy_text(self, text: str) -> None:
+        from . import winsys
+        winsys.copy_text(text)
+
     def video_available(self) -> bool:
         from . import screen
         return screen.video_available()

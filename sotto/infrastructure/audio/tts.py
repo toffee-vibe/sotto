@@ -32,7 +32,13 @@ def pick_voice(text: str, voice_ru: str, voice_en: str) -> str:
 
 def synthesize(text: str, voice: str, speed: float = 1.0) -> tuple[np.ndarray, int]:
     audio = _engine(voice).generate(text, sid=0, speed=speed)
-    return np.asarray(audio.samples, dtype=np.float32), int(audio.sample_rate)
+    samples = np.asarray(audio.samples, dtype=np.float32)
+    if samples.size == 0:
+        # sherpa-onnx 2.x убрал espeak-фронтенд: Piper-голоса без готовых фонем молчат.
+        raise RuntimeError(
+            "Озвучка не получилась: установленная версия sherpa-onnx не умеет голоса Piper. "
+            "Поставь sherpa-onnx<2:  pip install 'sherpa-onnx<2'")
+    return samples, int(audio.sample_rate)
 
 
 def start_playback(samples: np.ndarray, sample_rate: int, target: str | None = None):

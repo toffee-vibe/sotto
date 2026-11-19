@@ -14,7 +14,6 @@ import asyncio
 import logging
 import random
 import re
-import subprocess
 import time
 from typing import Any
 from urllib.parse import quote
@@ -136,8 +135,11 @@ async def fetch(cfg: LinkedInCfg, db: Any, queries: list[str]) -> list[RawPost]:
 
 def open_for_reply(url: str, text: str) -> None:
     """Открыть страницу в обычном браузере и положить текст в буфер — отправишь сам."""
-    subprocess.run(["wl-copy"], input=text.encode(), check=False)
-    subprocess.Popen(["xdg-open", url], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, start_new_session=True)
+    import webbrowser
+
+    from ..platform import current
+    current().copy_text(text)
+    webbrowser.open(url)
 
 
 # Извлечение текста — максимально «тупое» и устойчивое к смене вёрстки.

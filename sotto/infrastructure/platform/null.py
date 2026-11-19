@@ -102,6 +102,8 @@ class NullPlatform:
     def clipboard(self) -> str:
         return ""
 
+    def copy_text(self, text: str) -> None: ...
+
     def video_available(self) -> bool:
         return False
 

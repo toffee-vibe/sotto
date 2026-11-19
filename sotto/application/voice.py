@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import sys
 import threading
 import time
 from collections.abc import Callable
@@ -16,6 +17,7 @@ from typing import Any
 import numpy as np
 
 from ..config import Config
+from ..infrastructure.process import sotto_argv, terminate_tree
 from .call_detection import CallDetector
 from .copilot import Copilot
 from .interviews import InterviewService
@@ -246,6 +248,13 @@ class VoiceRuntime:
         log.info("Оконный менеджер перечитал конфиг — заново регистрирую правила и хоткеи")
         self.setup_desktop()
 
+    def _overlay_argv(self) -> list[str]:
+        """Как запустить оверлей. На Windows — модулем текущего интерпретатора: консольный
+        sotto.exe открыл бы чёрное окно, а строка «env PYTHONPATH=…» (запуск из nix-shell) там не работает."""
+        if sys.platform == "win32":
+            return sotto_argv() + ["overlay"]
+        return self.sotto_command().split() + ["overlay"]
+
     def _overlay_watchdog(self) -> None:
         """Держит оверлей запущенным и проверяет, что его окно действительно скрыто из демонстрации."""
         stop = self._stop
@@ -253,10 +262,11 @@ class VoiceRuntime:
             running = self._overlay_proc is not None and self._overlay_proc.poll() is None
             if not self.overlay_allowed:
                 if running and self._overlay_proc:
-                    self._overlay_proc.terminate()
+                    terminate_tree(self._overlay_proc)
                 continue
             if not running:
-                self._overlay_proc = self.spawn(self.sotto_command().split() + ["overlay"])
+                cmd = self._overlay_argv()
+                self._overlay_proc = self.spawn(cmd)
                 continue
             window = self.wm.overlay_window()
             self._overlay_window = window
@@ -269,7 +279,7 @@ class VoiceRuntime:
                     self.bus.publish("notice", {"text": "Не удалось скрыть оверлей из демонстрации — он закрыт"})
                     self.overlay_allowed = False
                     if self._overlay_proc:
-                        self._overlay_proc.terminate()
+                        terminate_tree(self._overlay_proc)
 
     def _remember_overlay_geometry(self) -> None:
         """Окно передвинули или растянули мышью — запоминаем, чтобы в следующий раз оно открылось там же."""
@@ -333,7 +343,7 @@ class VoiceRuntime:
             self.trainer.stop()
         await asyncio.to_thread(self.teardown_desktop)
         if self._overlay_proc and self._overlay_proc.poll() is None:
-            self._overlay_proc.terminate()
+            terminate_tree(self._overlay_proc)
         log.info("Голосовой суфлёр остановлен")
         self.publish_status()
 

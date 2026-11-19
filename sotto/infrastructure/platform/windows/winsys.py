@@ -612,7 +612,8 @@ def autostart_enabled() -> bool:
 
 
 def set_autostart(enabled: bool) -> bool:
-    """Включить/выключить запуск при входе в систему (HKCU\\…\\Run, без прав администратора)."""
+    """Включить/выключить запуск при входе в систему (HKCU\\…\\Run, без прав администратора).
+    True — записано/удалено; ошибки реестра вылетают исключением."""
     command = " ".join(f'"{part}"' if " " in part else part for part in autostart_command())
     key = winreg.CreateKeyEx(winreg.HKEY_CURRENT_USER, RUN_KEY, 0, winreg.KEY_SET_VALUE)
     try:
@@ -625,4 +626,4 @@ def set_autostart(enabled: bool) -> bool:
                 pass
     finally:
         winreg.CloseKey(key)
-    return enabled
+    return True

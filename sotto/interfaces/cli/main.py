@@ -72,6 +72,13 @@ def cmd_stage(args: argparse.Namespace) -> int:
 
 
 def main(argv: list[str] | None = None) -> int:
+    if sys.platform == "win32":
+        # Консоль Windows без UTF-8 (cp1252/cp866) падает на русском тексте справки и сообщений.
+        for stream in (sys.stdout, sys.stderr):
+            try:
+                stream.reconfigure(encoding="utf-8", errors="replace")  # type: ignore[union-attr]
+            except Exception:  # noqa: BLE001 — перенаправленный поток может не уметь reconfigure
+                pass
     p = argparse.ArgumentParser(prog="sotto", description="Невидимый ИИ-суфлёр для собеседований")
     p.add_argument("-v", "--verbose", action="store_true")
     sub = p.add_subparsers(dest="cmd")
